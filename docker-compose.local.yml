@@ -1,0 +1,143 @@
+version: "3.7"
+services:
+  postgres:
+    image: library/postgres:13
+    container_name: postgres
+    restart: on-failure
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: "postgres"
+      POSTGRES_DB: postgres
+    volumes:
+      - db-data:/var/lib/postgresql/data
+      - ./postgres/:/docker-entrypoint-initdb.d/
+    ports:
+      - "5433:5432"
+    networks:
+      - api-gateway
+      - database
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $$POSTGRES_DB -U $$POSTGRES_USER"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  rating:
+    image: rating-rsoi2
+    build:
+      context: .
+      dockerfile: v4/src/docker/rating/Dockerfile
+    container_name: rating
+    ports:
+      - "8050:8050"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./v4/src/rating/config.yaml:/usr/local/etc/rating/config.yaml
+    networks:
+      - api-gateway
+      - rating
+      - database
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://rating:8050/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+
+  library:
+    image: library-rsoi2
+    build:
+      context: .
+      dockerfile: v4/src/docker/library/Dockerfile
+    container_name: library
+    ports:
+      - "8060:8060"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./v4/src/library/config.yaml:/usr/local/etc/library/config.yaml
+    networks:
+      - api-gateway
+      - library
+      - database
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://library:8060/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+
+  reservation:
+    image: reservation-rsoi2
+    build:
+      context: .
+      dockerfile: v4/src/docker/reservation/Dockerfile
+    container_name: reservation
+    ports:
+      - "8070:8070"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./v4/src/reservation/config.yaml:/usr/local/etc/reservation/config.yaml
+    networks:
+      - api-gateway
+      - reservation
+      - database
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://reservation:8070/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+
+  apiserver:
+    image: apiserver-rsoi2
+    build:
+      context: .
+      dockerfile: v4/src/docker/apiserver/Dockerfile
+    container_name: apiserver
+    ports:
+      - "8080:8080"
+    depends_on:
+      library:
+        condition: service_healthy
+      reservation:
+        condition: service_healthy
+      rating:
+        condition: service_healthy
+    volumes:
+      - ./v4/src/apiserver/config.yaml:/usr/local/etc/apiserver/config.yaml
+    networks:
+      - api-gateway
+      - rating
+      - library
+      - reservation
+    healthcheck:
+      test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://apiserver:8080/readiness"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+      start_period: 10s
+
+volumes:
+  db-data:
+
+networks:
+  api-gateway:
+    driver: bridge
+
+  rating:
+    driver: bridge
+
+  library:
+    driver: bridge
+
+  reservation:
+    driver: bridge
+
+  database:
+    driver: bridge
