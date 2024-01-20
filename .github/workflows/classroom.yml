@@ -22,12 +22,12 @@ jobs:
 
       - name: Build images
         timeout-minutes: 10
-        run: docker compose build
+        run: docker-compose build
 
       - name: Run containers
         timeout-minutes: 5
         run: |
-          docker compose up -d
+          docker-compose -f ./docker-compose.local.yml up -d
           ./scripts/wait-script.sh
         env:
           WAIT_PORTS: 8080,8070,8060,8050

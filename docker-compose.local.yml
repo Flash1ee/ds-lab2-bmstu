@@ -14,7 +14,6 @@ services:
     ports:
       - "5433:5432"
     networks:
-      - api-gateway
       - database
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -d $$POSTGRES_DB -U $$POSTGRES_USER"]
@@ -34,9 +33,8 @@ services:
       postgres:
         condition: service_healthy
     volumes:
-      - ./v4/src/rating/config.yaml:/usr/local/etc/rating/config.yaml
+      - ./v4/src/rating/config-prod.yaml:/usr/local/etc/rating/config.yaml
     networks:
-      - api-gateway
       - rating
       - database
     healthcheck:
@@ -58,9 +56,8 @@ services:
       postgres:
         condition: service_healthy
     volumes:
-      - ./v4/src/library/config.yaml:/usr/local/etc/library/config.yaml
+      - ./v4/src/library/config-prod.yaml:/usr/local/etc/library/config.yaml
     networks:
-      - api-gateway
       - library
       - database
     healthcheck:
@@ -82,9 +79,8 @@ services:
       postgres:
         condition: service_healthy
     volumes:
-      - ./v4/src/reservation/config.yaml:/usr/local/etc/reservation/config.yaml
+      - ./v4/src/reservation/config-prod.yaml:/usr/local/etc/reservation/config.yaml
     networks:
-      - api-gateway
       - reservation
       - database
     healthcheck:
@@ -110,7 +106,7 @@ services:
       rating:
         condition: service_healthy
     volumes:
-      - ./v4/src/apiserver/config.yaml:/usr/local/etc/apiserver/config.yaml
+      - ./v4/src/apiserver/config-prod.yaml:/usr/local/etc/apiserver/config.yaml
     networks:
       - api-gateway
       - rating

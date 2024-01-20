@@ -5,6 +5,7 @@ path=$(dirname "$0")
 
 PIDs=()
 for port in "${PORTS[@]}"; do
+  echo "Waiting for http://localhost:$port/readiness..."
   "$path"/wait-for.sh -t 120 "http://localhost:$port/readiness" -- echo "Host localhost:$port is active" &
   PIDs+=($!)
 done
